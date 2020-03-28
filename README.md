@@ -1,46 +1,80 @@
-# edn-cljs
+[![Clojars Project](https://img.shields.io/clojars/v/cljs-auto.svg)](https://clojars.org/cljs-auto)
 
-FIXME: my new application.
+# cljs-auto
 
-## Installation
+A tool to automatically convert EDN files to Clojurescript, and automatically
+require namespaces
 
-Download from https://github.com/kwrooijen/cljs-auto.
+## Rationale
+
+The main reason for this library was to solve two problems with the combination
+of Clojurescript and Integrant. However this can be used in a more general way
+
+### 1. Clojurescript can't read EDN files
+
+In Clojurescript (unless using node.js) you cannot read files. This can only be
+done through HTTP requests. In Clojurescript you'd write EDN directly in your
+source files, mixing source and configuration.
+
+This tool let's you aggregate EDN files and place them in a Clojurescript file.
+This way you can still write EDN, and it still gets minified.
+
+
+### 2. Clojurescript can't dynamically require namespaces
+
+Integrant has a feature to automatically require namespaces based on the keys in
+your configuration. This feature is not supported in Clojurescript because of
+limitations.
+
+This tool will add require statements to the generated file based on the
+directory you choose to watch. This way you only have to require the generated
+file to include all multimethods.
 
 ## Usage
 
-FIXME: explanation
+Add the following alias to your `deps.edn` file, and configure as needed.
 
-Run the project directly:
+``` clojure
+{:aliases
+ {:cljs-auto
+  {:main-opts
+   ["-m cljs-auto.core"
+    "-p resources/config"            ;; EDN files to insert in generated file
+    "-P src/my-app/files-to-require" ;; Clojurescript files to require
+    "-o src/my-app/config.cljs"      ;; Output file name
+    "-ns my-app.config"              ;; Namespace of the generated file
+    "--integrant"]                   ;; Include Integrant namespace and EDN readers
+   :extra-deps
+   {cljs-auto
+    {:mvn/version "0.0.1"}}}}}
+```
 
-    $ clojure -m cljs-auto.core
+Then run the alias in the terminal.
 
-Run the project's tests (they'll fail until you edit them):
+``` sh
+clj -A:cljs-auto
+```
 
-    $ clojure -A:test:runner
+If you want to automatically watch for changes, you can add the `--watch flag`
 
-Build an uberjar:
+``` sh
+clj -A:cljs-auto --watch
+```
 
-    $ clojure -A:uberjar
-
-Run that uberjar:
-
-    $ java -jar edn-cljs.jar
+This will generate a new file based on your options, with a `def` called
+`config`. Your EDN files will be merged and placed here.
 
 ## Options
 
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
+| Option | Option      | Description                                             |
+|:-------|:------------|:--------------------------------------------------------|
+| -o     | --output    | An output file must be specified using the `-o` option. |
+| -p     | --edn-path  | Root path of EDN files to merge                         |
+| -P     | --cljs-path | Root path of Clojurescript files to require             |
+| -ns    | --namespace | Namespace of the generated cljs file                    |
+| -w     | --watch     | Watch PATH to see if any files change and process them. |
+|        | --integrant | Use Integrant readers (ig/ref ig/refset)                |
+| -h     | --help      | Show help information                                   |
 
 ## License
 

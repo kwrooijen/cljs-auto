@@ -5,7 +5,7 @@
   [ ;; TODO
    ;; ["-m" "--merge" "Merge configs"]
    ;; ["-M" "--meta-merge" "Meta merge configs"]
-   ;; ["-c" "--config" "Specifiy a edn-cljs config file"]
+   ;; ["-c" "--config" "Specifiy a cljs-auto config file"]
 
    ["-o" "--output PATH" "Output file"
     :missing "An output file must be specified using the `-o` option."]
@@ -17,7 +17,7 @@
     :validate [dir-exists? "Directory does not exist"]]
 
    ["-ns" "--namespace NAMESPACE" "Namespace of the generated cljs file"
-    :default "edn-cljs.generated.config"]
+    :default "cljs-auto.generated.config"]
 
    ["-w" "--watch" "Watch PATH to see if any files change and process them."]
 
@@ -32,7 +32,7 @@
 
 (defn validate-errors [errors]
   (when errors
-    (println "edn-cljs: Failed to start\n")
+    (println "cljs-auto: Failed to start\n")
     (doseq [error errors]
       (println "  " error))
     (System/exit 1)))
