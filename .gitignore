@@ -9,4 +9,4 @@
 /.nrepl-port
 .hgignore
 .hg/
-/.rebel_readline_history
+.rebel_readline_history

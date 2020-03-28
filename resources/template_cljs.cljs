@@ -3,8 +3,9 @@
 
   https://github.com/kwrooijen/cljs-auto
   "
-  (:require <% (doseq [require requires] %><%= require %>
-                      <%) %>))
+  (:require
+   <% (doseq [require requires] %><%= require %>
+             <%) %>))
 
 (def config
   <%= config %>)

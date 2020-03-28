@@ -8,12 +8,17 @@
    [comb.template :as template ]
    [hawk.core :as hawk]))
 
-
 (defn dir? [v]
   (.isDirectory v))
 
 (defn dir-exists? [v]
   (dir? (io/file v)))
+
+(defn file-ns
+  [file]
+  (-> (slurp file)
+      (edn/read-string)
+      (second)))
 
 (def cli-options
   [ ;; TODO
@@ -24,9 +29,11 @@
    ["-o" "--output PATH" "Output file"
     :missing "An output file must be specified using the `-o` option."]
 
-   ["-p" "--path PATH" "Root path of the EDN files"
-    :validate [dir-exists? "Directory does not exist"]
-    :missing "An output directory must be specified using the `-p` option."]
+   ["-p" "--edn-path PATH" "Root path of EDN files to merge"
+    :validate [dir-exists? "Directory does not exist"]]
+
+   ["-P" "--cljs-path PATH" "Root path of Clojurescript files to require"
+    :validate [dir-exists? "Directory does not exist"]]
 
    ["-ns" "--namespace NAMESPACE" "Namespace of the generated cljs file"
     :default "edn-cljs.generated.config"]
@@ -54,13 +61,21 @@
   [options]
   (merge (when (:integrant options) readers-integrant)))
 
+(defn cljs-requires [options]
+  (if (:cljs-path options)
+    (->> (files-in (:cljs-path options))
+         (filter #(string/ends-with? % ".cljs"))
+         (mapv (comp vector file-ns)))
+    []))
+
 (defn requires
   [options]
   (remove nil?
-          [(when (:integrant options) require-integrant)]))
+          (conj (cljs-requires options)
+                (when (:integrant options) require-integrant))))
 
 (defn read-edn-files [options]
-  (->> (files-in (:path options))
+  (->> (files-in (:edn-path options))
        (filter #(string/ends-with? % ".edn"))
        (map slurp)
        (map (partial edn/read-string {:readers (readers options)}))
@@ -89,20 +104,41 @@
     (System/exit 1)))
 
 (defn full-process [options]
-  (binding [*print-namespace-maps* false
-            *print-meta* true]
-    (-> (read-edn-files options)
-        (output-config options))))
+  (when (:edn-path options)
+    (binding [*print-namespace-maps* false
+              *print-meta* true]
+      (-> (read-edn-files options)
+          (output-config options)))))
+
+(defn edn-file? [e]
+  (-> (:file e)
+      (.getName)
+      (string/ends-with? ".edn")))
+
+(defn cljs-file? [e]
+  (-> (:file e)
+      (.getName)
+      (string/ends-with? ".cljs")))
+
+(defn created? [e]
+  (= :create (:kind e)))
+
+(defn compile? [e]
+  (or (edn-file? e)
+      (and (cljs-file? e)
+           (created? e))))
 
 (defn watch-files [options]
   (hawk/watch!
-   [{:paths [(:path options)]
-     :handler (fn [ctx _e]
-                (try
-                  (full-process options)
-                  (catch Exception e
-                    (println (.getMessage e))))
-                ctx)}]))
+   [{:paths
+     (remove nil?
+             [(:edn-path options)
+              (:cljs-path options)])
+     :handler (fn [_ctx e]
+                (when (compile? e)
+                  (try (full-process options)
+                       (catch Exception e
+                         (println (.getMessage e))))))}]))
 
 (defn -main
   "I don't do a whole lot ... yet."
