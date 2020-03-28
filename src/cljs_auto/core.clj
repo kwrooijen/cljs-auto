@@ -52,11 +52,11 @@
      :handler (partial hawk-handler options)}]))
 
 (defn -main
-  "I don't do a whole lot ... yet."
   [& args]
-  (let [{:keys [errors options]} (parse-opts args cljs-auto.cli/options)]
+  (let [{:keys [errors options] :as opts} (parse-opts args cljs-auto.cli/options)]
+    (cljs-auto.cli/show-help opts)
     (cljs-auto.cli/validate-errors errors)
     (full-process options)
     (when (:watch options)
-      (println "Starting edn-cljs Watcher...")
+      (println "Starting cljs-auto watcher...")
       (watch-files options))))

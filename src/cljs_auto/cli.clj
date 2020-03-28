@@ -25,6 +25,11 @@
 
    ["-h" "--help"]])
 
+(defn show-help [{:keys [options summary]}]
+  (when (:help options)
+    (println summary)
+    (System/exit 0)))
+
 (defn validate-errors [errors]
   (when errors
     (println "edn-cljs: Failed to start\n")
